@@ -23,7 +23,10 @@ public class SkillService {
         if (skillRepository.existsByName(name)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Skill already exists: " + name);
         }
-        return skillRepository.save(Skill.builder().name(name).category(category).build());
+        Skill skill = new Skill();
+        skill.setName(name);
+        skill.setCategory(category);
+        return skillRepository.save(skill);
     }
 
     public Skill getById(Long id) {

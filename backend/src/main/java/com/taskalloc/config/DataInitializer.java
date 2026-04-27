@@ -5,18 +5,22 @@ import com.taskalloc.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Seeds the database with demo data on first run.
- * Safe to rerun — skips if data already exists.
+ * Seeds demo users and skills on every startup.
+ * Uses upsert (find-or-create) so credentials always work,
+ * even if the DB already had old data from a previous schema.
  *
- * Demo credentials:
- *   manager@demo.com  / password123  (MANAGER)
- *   alice@demo.com    / password123  (EMPLOYEE — Java Expert, React Intermediate)
- *   bob@demo.com      / password123  (EMPLOYEE — React Expert, Node.js Advanced)
- *   charlie@demo.com  / password123  (EMPLOYEE — Java Beginner, DevOps Advanced)
+ * Demo credentials (plain text passwords for MVP only):
+ *
+ *   ── ADMIN / MANAGER ─────────────────────────────────
+ *   admin@test.com   / admin123
+ *
+ *   ── EMPLOYEES ───────────────────────────────────────
+ *   emp1@test.com    / emp123      (Java/Spring/MySQL expert)
+ *   emp2@test.com    / emp123      (Frontend specialist)
+ *   emp3@test.com    / emp123      (DevOps specialist)
  */
 @Component
 @RequiredArgsConstructor
@@ -26,108 +30,82 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final SkillRepository skillRepository;
     private final UserSkillRepository userSkillRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
-        if (userRepository.count() > 0) {
-            log.info("Database already seeded — skipping initialization");
-            return;
-        }
+        log.info("Seeding/updating demo data...");
 
-        log.info("Seeding demo data...");
+        // ── Skills (upsert by name) ─────────────────────
+        Skill java    = upsertSkill("Java",        "BACKEND");
+        Skill spring  = upsertSkill("Spring Boot", "BACKEND");
+        Skill react   = upsertSkill("React",       "FRONTEND");
+        Skill angular = upsertSkill("Angular",     "FRONTEND");
+        Skill nodejs  = upsertSkill("Node.js",     "BACKEND");
+        Skill docker  = upsertSkill("Docker",      "DEVOPS");
+        Skill mysql   = upsertSkill("MySQL",       "DATABASE");
+        Skill aws     = upsertSkill("AWS",         "DEVOPS");
 
-        // ── Skills ────────────────────────────────────────────────
-        Skill java      = save(skill("Java",       "BACKEND"));
-        Skill spring    = save(skill("Spring Boot", "BACKEND"));
-        Skill react     = save(skill("React",       "FRONTEND"));
-        Skill angular   = save(skill("Angular",     "FRONTEND"));
-        Skill nodejs    = save(skill("Node.js",     "BACKEND"));
-        Skill docker    = save(skill("Docker",      "DEVOPS"));
-        Skill mysql     = save(skill("MySQL",       "DATABASE"));
-        Skill aws       = save(skill("AWS",         "DEVOPS"));
+        // ── Manager ─────────────────────────────────────
+        upsertUser("Admin User", "admin@test.com", "admin123", User.Role.MANAGER);
 
-        // ── Manager ───────────────────────────────────────────────
-        User manager = userRepository.save(User.builder()
-                .name("Manager Mike")
-                .email("manager@demo.com")
-                .password(passwordEncoder.encode("password123"))
-                .role(User.Role.MANAGER)
-                .available(true)
-                .build());
+        // ── Employees ───────────────────────────────────
+        User emp1 = upsertUser("Emp One",   "emp1@test.com", "emp123", User.Role.EMPLOYEE);
+        ensureSkill(emp1, java,   5, 6);
+        ensureSkill(emp1, spring, 4, 4);
+        ensureSkill(emp1, mysql,  4, 5);
 
-        // ── Employee: Alice — strong Java/Spring, decent React ────
-        User alice = userRepository.save(User.builder()
-                .name("Alice Johnson")
-                .email("alice@demo.com")
-                .password(passwordEncoder.encode("password123"))
-                .role(User.Role.EMPLOYEE)
-                .available(true)
-                .build());
-        addSkill(alice, java,    5, 6);
-        addSkill(alice, spring,  4, 4);
-        addSkill(alice, react,   3, 2);
-        addSkill(alice, mysql,   4, 5);
+        User emp2 = upsertUser("Emp Two",   "emp2@test.com", "emp123", User.Role.EMPLOYEE);
+        ensureSkill(emp2, react,   5, 5);
+        ensureSkill(emp2, angular, 4, 3);
+        ensureSkill(emp2, nodejs,  4, 4);
 
-        // ── Employee: Bob — frontend specialist + Node.js ─────────
-        User bob = userRepository.save(User.builder()
-                .name("Bob Smith")
-                .email("bob@demo.com")
-                .password(passwordEncoder.encode("password123"))
-                .role(User.Role.EMPLOYEE)
-                .available(true)
-                .build());
-        addSkill(bob, react,   5, 5);
-        addSkill(bob, angular, 4, 3);
-        addSkill(bob, nodejs,  4, 4);
-        addSkill(bob, mysql,   2, 1);
+        User emp3 = upsertUser("Emp Three", "emp3@test.com", "emp123", User.Role.EMPLOYEE);
+        ensureSkill(emp3, docker, 5, 4);
+        ensureSkill(emp3, aws,    4, 3);
+        ensureSkill(emp3, java,   2, 1);
 
-        // ── Employee: Charlie — DevOps / infra ────────────────────
-        User charlie = userRepository.save(User.builder()
-                .name("Charlie Brown")
-                .email("charlie@demo.com")
-                .password(passwordEncoder.encode("password123"))
-                .role(User.Role.EMPLOYEE)
-                .available(true)
-                .build());
-        addSkill(charlie, docker, 5, 4);
-        addSkill(charlie, aws,    4, 3);
-        addSkill(charlie, java,   2, 1);
-        addSkill(charlie, mysql,  3, 2);
-
-        // ── Employee: Diana — full-stack ──────────────────────────
-        User diana = userRepository.save(User.builder()
-                .name("Diana Prince")
-                .email("diana@demo.com")
-                .password(passwordEncoder.encode("password123"))
-                .role(User.Role.EMPLOYEE)
-                .available(true)
-                .build());
-        addSkill(diana, java,    3, 3);
-        addSkill(diana, spring,  3, 2);
-        addSkill(diana, angular, 3, 2);
-        addSkill(diana, docker,  2, 1);
-        addSkill(diana, mysql,   3, 2);
-
-        log.info("Demo data seeded successfully!");
-        log.info("Login credentials: manager@demo.com / alice@demo.com / bob@demo.com / charlie@demo.com / diana@demo.com");
-        log.info("Password for all: password123");
+        log.info("Demo users ready:");
+        log.info("  MANAGER   -> admin@test.com / admin123");
+        log.info("  EMPLOYEE  -> emp1@test.com  / emp123");
+        log.info("  EMPLOYEE  -> emp2@test.com  / emp123");
+        log.info("  EMPLOYEE  -> emp3@test.com  / emp123");
     }
 
-    private Skill skill(String name, String category) {
-        return Skill.builder().name(name).category(category).build();
+    private Skill upsertSkill(String name, String category) {
+        return skillRepository.findByName(name).orElseGet(() -> {
+            Skill s = new Skill();
+            s.setName(name);
+            s.setCategory(category);
+            return skillRepository.save(s);
+        });
     }
 
-    private Skill save(Skill s) {
-        return skillRepository.save(s);
+    private User upsertUser(String name, String email, String password, User.Role role) {
+        User user = userRepository.findByEmail(email).orElseGet(User::new);
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(password);
+        user.setRole(role);
+        user.setAvailable(true);
+        return userRepository.save(user);
     }
 
-    private void addSkill(User user, Skill skill, int proficiency, int years) {
-        userSkillRepository.save(UserSkill.builder()
-                .user(user)
-                .skill(skill)
-                .proficiencyLevel(proficiency)
-                .yearsExperience(years)
-                .build());
+    private void ensureSkill(User user, Skill skill, int proficiency, int years) {
+        userSkillRepository.findByUserIdAndSkillId(user.getId(), skill.getId())
+                .ifPresentOrElse(
+                    existing -> {
+                        existing.setProficiencyLevel(proficiency);
+                        existing.setYearsExperience(years);
+                        userSkillRepository.save(existing);
+                    },
+                    () -> {
+                        UserSkill us = new UserSkill();
+                        us.setUser(user);
+                        us.setSkill(skill);
+                        us.setProficiencyLevel(proficiency);
+                        us.setYearsExperience(years);
+                        userSkillRepository.save(us);
+                    }
+                );
     }
 }

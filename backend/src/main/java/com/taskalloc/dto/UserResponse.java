@@ -1,12 +1,11 @@
 package com.taskalloc.dto;
 
 import com.taskalloc.model.User;
-import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 
-@Data @Builder
+@Data
 public class UserResponse {
     private Long id;
     private String name;
@@ -16,9 +15,8 @@ public class UserResponse {
     private long activeTaskCount;
     private List<SkillSummary> skills;
 
-    @Data @Builder
+    @Data
     public static class SkillSummary {
-        private Long userSkillId;   // id of the UserSkill row — needed for delete/update
         private Long skillId;
         private String skillName;
         private String category;

@@ -14,8 +14,8 @@ export class TaskService {
     return this.http.get<Task[]>(this.base);
   }
 
-  getMyTasks(): Observable<Task[]> {
-    return this.http.get<Task[]>(`${this.base}/my-tasks`);
+  getMyTasks(userId: number): Observable<Task[]> {
+    return this.http.get<Task[]>(`${this.base}/user/${userId}`);
   }
 
   getTaskById(id: number): Observable<Task> {
@@ -28,9 +28,5 @@ export class TaskService {
 
   updateStatus(id: number, status: TaskStatus): Observable<Task> {
     return this.http.patch<Task>(`${this.base}/${id}/status`, { status });
-  }
-
-  manualAssign(taskId: number, employeeId: number): Observable<Task> {
-    return this.http.patch<Task>(`${this.base}/${taskId}/assign/${employeeId}`, {});
   }
 }

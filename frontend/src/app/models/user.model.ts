@@ -1,7 +1,6 @@
 export type Role = 'MANAGER' | 'EMPLOYEE';
 
 export interface SkillSummary {
-  userSkillId: number;
   skillId: number;
   skillName: string;
   category: string;
@@ -20,7 +19,6 @@ export interface User {
 }
 
 export interface AuthResponse {
-  token: string;
   userId: number;
   name: string;
   email: string;

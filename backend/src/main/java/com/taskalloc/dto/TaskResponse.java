@@ -1,14 +1,13 @@
 package com.taskalloc.dto;
 
 import com.taskalloc.model.Task;
-import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data @Builder
+@Data
 public class TaskResponse {
     private Long id;
     private String title;
@@ -24,14 +23,14 @@ public class TaskResponse {
     private UserSummary assignedTo;
     private List<SkillRequirementSummary> requiredSkills;
 
-    @Data @Builder
+    @Data
     public static class UserSummary {
         private Long id;
         private String name;
         private String email;
     }
 
-    @Data @Builder
+    @Data
     public static class SkillRequirementSummary {
         private Long skillId;
         private String skillName;

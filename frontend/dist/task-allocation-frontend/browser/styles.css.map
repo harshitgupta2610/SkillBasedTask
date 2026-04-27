@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/styles.scss"],
+  "sourcesContent": ["/* Basic global styles for the MVP — relies on Bootstrap CDN imported in index.html */\n\nbody {\n  background: #f8f9fa;\n  font-family: Arial, Helvetica, sans-serif;\n}\n\n.app-title {\n  font-weight: bold;\n}\n\n.error {\n  color: #dc3545;\n  font-size: 0.9rem;\n}\n\n.success {\n  color: #198754;\n  font-size: 0.9rem;\n}\n\ntable {\n  background: #fff;\n}\n"],
+  "mappings": ";;;AAEA;AACE,cAAA;AACA;IAAA,KAAA;IAAA,SAAA;IAAA;;AAGF,CAAA;AACE,eAAA;;AAGF,CAAA;AACE,SAAA;AACA,aAAA;;AAGF,CAAA;AACE,SAAA;AACA,aAAA;;AAGF;AACE,cAAA;;",
+  "names": []
+}

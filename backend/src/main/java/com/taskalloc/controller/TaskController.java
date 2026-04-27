@@ -6,8 +6,6 @@ import com.taskalloc.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,11 +18,10 @@ public class TaskController {
 
     private final TaskService taskService;
 
-    /** Create task — triggers auto-allocation immediately */
+    /** Create task — triggers auto-allocation immediately. createdById comes from request body. */
     @PostMapping
-    public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskCreateRequest req,
-                                                    @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(taskService.createTask(req, userDetails.getUsername()));
+    public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskCreateRequest req) {
+        return ResponseEntity.ok(taskService.createTask(req));
     }
 
     /** Get all tasks (manager view) */
@@ -33,10 +30,10 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    /** Get tasks assigned to the logged-in employee */
-    @GetMapping("/my-tasks")
-    public ResponseEntity<List<TaskResponse>> getMyTasks(@AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(taskService.getMyTasks(userDetails.getUsername()));
+    /** Get tasks assigned to a specific user */
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<TaskResponse>> getMyTasks(@PathVariable Long userId) {
+        return ResponseEntity.ok(taskService.getMyTasks(userId));
     }
 
     @GetMapping("/{id}")
@@ -44,19 +41,11 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTaskById(id));
     }
 
-    /** Update task status (employee updates own task progress) */
+    /** Update task status (employee marks Start / Done) */
     @PatchMapping("/{id}/status")
     public ResponseEntity<TaskResponse> updateStatus(@PathVariable Long id,
-                                                      @RequestBody Map<String, String> body,
-                                                      @AuthenticationPrincipal UserDetails userDetails) {
+                                                      @RequestBody Map<String, String> body) {
         Task.Status status = Task.Status.valueOf(body.get("status"));
-        return ResponseEntity.ok(taskService.updateStatus(id, status, userDetails.getUsername()));
-    }
-
-    /** Manual reassign by manager */
-    @PatchMapping("/{id}/assign/{employeeId}")
-    public ResponseEntity<TaskResponse> manualAssign(@PathVariable Long id,
-                                                      @PathVariable Long employeeId) {
-        return ResponseEntity.ok(taskService.manualAssign(id, employeeId));
+        return ResponseEntity.ok(taskService.updateStatus(id, status));
     }
 }
