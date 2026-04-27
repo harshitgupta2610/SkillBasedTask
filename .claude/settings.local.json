@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(dir \"C:\\\\Users\\\\2484977\\\\Desktop\\\\FinalProject\")"
+      "Bash(dir \"C:\\\\Users\\\\2484977\\\\Desktop\\\\FinalProject\")",
+      "Bash(mvn -q compile)"
     ]
   }
 }

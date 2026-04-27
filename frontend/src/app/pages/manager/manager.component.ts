@@ -3,7 +3,7 @@ import { AuthService } from '../../services/auth.service';
 import { TaskService } from '../../services/task.service';
 import { UserService } from '../../services/user.service';
 import { SkillService } from '../../services/skill.service';
-import { Task, TaskCreateRequest, TaskStatus, Priority } from '../../models/task.model';
+import { Task, TaskCreateRequest, Priority } from '../../models/task.model';
 import { User } from '../../models/user.model';
 import { Skill } from '../../models/skill.model';
 
@@ -12,37 +12,24 @@ import { Skill } from '../../models/skill.model';
   templateUrl: './manager.component.html'
 })
 export class ManagerComponent implements OnInit {
-  activeTab = 'tasks';
-
-  // Tasks
   tasks: Task[] = [];
-  tasksLoading = false;
-
-  // Employees
   employees: User[] = [];
-  employeesLoading = false;
-
-  // Skills
   skills: Skill[] = [];
 
-  // Create task form
-  showCreateForm = false;
-  createLoading  = false;
-  createError    = '';
-  lastCreated: Task | null = null;
+  error = '';
+  loading = false;
 
   newTask: TaskCreateRequest = {
-    title: '', description: '', priority: 'MEDIUM', deadline: '',
+    title: '',
+    description: '',
+    priority: 'MEDIUM',
+    deadline: '',
+    createdById: 0,
     requiredSkills: []
   };
 
-  // Assign task modal state
-  assignTaskId: number | null = null;
-  assignEmployeeId: number | null = null;
-
-  // Filters
-  statusFilter = '';
-  priorityFilter = '';
+  priorities: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+  proficiencies = [1, 2, 3, 4, 5];
 
   constructor(
     public authService: AuthService,
@@ -58,22 +45,13 @@ export class ManagerComponent implements OnInit {
   }
 
   loadTasks(): void {
-    this.tasksLoading = true;
-    this.taskService.getAllTasks().subscribe({
-      next: t => { this.tasks = t; this.tasksLoading = false; },
-      error: () => this.tasksLoading = false
-    });
+    this.taskService.getAllTasks().subscribe(t => this.tasks = t);
   }
 
   loadEmployees(): void {
-    this.employeesLoading = true;
-    this.userService.getAllEmployees().subscribe({
-      next: e => { this.employees = e; this.employeesLoading = false; },
-      error: () => this.employeesLoading = false
-    });
+    this.userService.getAllEmployees().subscribe(e => this.employees = e);
   }
 
-  // ── Create Task ───────────────────────────
   addSkillReq(): void {
     this.newTask.requiredSkills.push({ skillId: 0, minProficiencyLevel: 1 });
   }
@@ -83,70 +61,59 @@ export class ManagerComponent implements OnInit {
   }
 
   submitTask(): void {
-    if (!this.newTask.title.trim()) { this.createError = 'Title is required.'; return; }
-    this.createError  = '';
-    this.createLoading = true;
-    this.lastCreated   = null;
+    const uid = this.authService.currentUser?.userId;
+    if (!uid) {
+      this.error = 'You must be logged in.';
+      return;
+    }
+    if (!this.newTask.title.trim()) {
+      this.error = 'Title is required.';
+      return;
+    }
+    this.error = '';
+    this.loading = true;
 
-    const payload = {
+    const payload: TaskCreateRequest = {
       ...this.newTask,
+      createdById: uid,
       requiredSkills: this.newTask.requiredSkills.filter(s => s.skillId > 0)
     };
 
     this.taskService.createTask(payload).subscribe({
-      next: task => {
-        this.createLoading = false;
-        this.lastCreated   = task;
-        this.showCreateForm = false;
-        this.resetForm();
+      next: () => {
+        this.loading = false;
+        this.newTask = { title: '', description: '', priority: 'MEDIUM', deadline: '', createdById: 0, requiredSkills: [] };
         this.loadTasks();
+        this.loadEmployees();
       },
       error: () => {
-        this.createLoading = false;
-        this.createError   = 'Failed to create task. Please try again.';
+        this.loading = false;
+        this.error = 'Failed to create task.';
       }
     });
-  }
-
-  resetForm(): void {
-    this.newTask = { title: '', description: '', priority: 'MEDIUM', deadline: '', requiredSkills: [] };
-  }
-
-  // ── Manual Assign ────────────────────────
-  doManualAssign(): void {
-    if (!this.assignTaskId || !this.assignEmployeeId) return;
-    this.taskService.manualAssign(this.assignTaskId, this.assignEmployeeId).subscribe({
-      next: () => { this.assignTaskId = null; this.assignEmployeeId = null; this.loadTasks(); }
-    });
-  }
-
-  openAssign(taskId: number): void {
-    this.assignTaskId = taskId;
-    this.assignEmployeeId = null;
-  }
-
-  // ── Helpers ──────────────────────────────
-  get filteredTasks(): Task[] {
-    return this.tasks.filter(t =>
-      (!this.statusFilter   || t.status   === this.statusFilter) &&
-      (!this.priorityFilter || t.priority === this.priorityFilter)
-    );
-  }
-
-  get stats() {
-    return {
-      total:      this.tasks.length,
-      open:       this.tasks.filter(t => t.status === 'OPEN').length,
-      inProgress: this.tasks.filter(t => t.status === 'IN_PROGRESS').length,
-      done:       this.tasks.filter(t => t.status === 'DONE').length,
-      assigned:   this.tasks.filter(t => t.status === 'ASSIGNED').length,
-    };
   }
 
   proficiencyLabel(level: number): string {
     return ['', 'Beginner', 'Elementary', 'Intermediate', 'Advanced', 'Expert'][level] ?? String(level);
   }
 
-  priorities: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-  proficiencies = [1, 2, 3, 4, 5];
+  statusColor(s: string): string {
+    if (s === 'OPEN') return 'bg-secondary';
+    if (s === 'ASSIGNED') return 'bg-primary';
+    if (s === 'IN_PROGRESS') return 'bg-warning text-dark';
+    if (s === 'DONE') return 'bg-success';
+    if (s === 'CANCELLED') return 'bg-dark';
+    return 'bg-light text-dark';
+  }
+
+  priorityColor(p: string): string {
+    if (p === 'CRITICAL') return 'bg-danger';
+    if (p === 'HIGH') return 'bg-warning text-dark';
+    if (p === 'MEDIUM') return 'bg-info text-dark';
+    return 'bg-secondary';
+  }
+
+  logout(): void {
+    this.authService.logout();
+  }
 }

@@ -24,44 +24,37 @@ public class TaskService {
     private final SkillRepository skillRepository;
     private final UserRepository userRepository;
     private final AllocationService allocationService;
-    private final NotificationService notificationService;
 
     @Transactional
-    public TaskResponse createTask(TaskCreateRequest req, String creatorEmail) {
-        User creator = userRepository.findByEmail(creatorEmail)
+    public TaskResponse createTask(TaskCreateRequest req) {
+        User creator = userRepository.findById(req.getCreatedById())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Creator not found"));
 
-        Task task = Task.builder()
-                .title(req.getTitle())
-                .description(req.getDescription())
-                .priority(req.getPriority())
-                .deadline(req.getDeadline())
-                .createdBy(creator)
-                .status(Task.Status.OPEN)
-                .requiredSkills(new ArrayList<>())
-                .build();
+        Task task = new Task();
+        task.setTitle(req.getTitle());
+        task.setDescription(req.getDescription());
+        task.setPriority(req.getPriority());
+        task.setDeadline(req.getDeadline());
+        task.setCreatedBy(creator);
+        task.setStatus(Task.Status.OPEN);
+        task.setRequiredSkills(new ArrayList<>());
 
-        // Save task first to get ID
         task = taskRepository.save(task);
 
-        // Add skill requirements
         if (req.getRequiredSkills() != null) {
             for (TaskCreateRequest.SkillRequirementDto dto : req.getRequiredSkills()) {
                 Skill skill = skillRepository.findById(dto.getSkillId())
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Skill not found: " + dto.getSkillId()));
-                TaskSkillRequirement tsr = TaskSkillRequirement.builder()
-                        .task(task)
-                        .skill(skill)
-                        .minProficiencyLevel(dto.getMinProficiencyLevel())
-                        .build();
+                TaskSkillRequirement tsr = new TaskSkillRequirement();
+                tsr.setTask(task);
+                tsr.setSkill(skill);
+                tsr.setMinProficiencyLevel(dto.getMinProficiencyLevel());
                 task.getRequiredSkills().add(tsr);
             }
             task = taskRepository.save(task);
         }
 
-        // Auto-allocate
         task = autoAllocate(task);
-
         return toResponse(task);
     }
 
@@ -73,11 +66,6 @@ public class TaskService {
                 task.setStatus(Task.Status.ASSIGNED);
                 task.setAllocationScore(candidate.getScore());
                 taskRepository.save(task);
-
-                notificationService.notify(candidate.getUser(),
-                    String.format("You have been assigned task: \"%s\" [Priority: %s]",
-                        task.getTitle(), task.getPriority()));
-
                 log.info("Task '{}' assigned to '{}' with score {}",
                     task.getTitle(), candidate.getUser().getName(), candidate.getScore());
             },
@@ -87,39 +75,11 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse updateStatus(Long taskId, Task.Status newStatus, String userEmail) {
+    public TaskResponse updateStatus(Long taskId, Task.Status newStatus) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
-
         task.setStatus(newStatus);
         taskRepository.save(task);
-
-        if (newStatus == Task.Status.DONE && task.getCreatedBy() != null) {
-            notificationService.notify(task.getCreatedBy(),
-                String.format("Task \"%s\" has been marked as DONE by %s",
-                    task.getTitle(),
-                    task.getAssignedTo() != null ? task.getAssignedTo().getName() : "assignee"));
-        }
-
-        return toResponse(task);
-    }
-
-    @Transactional
-    public TaskResponse manualAssign(Long taskId, Long employeeId) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Task not found"));
-        User employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
-
-        task.setAssignedTo(employee);
-        task.setAssignedAt(LocalDateTime.now());
-        task.setStatus(Task.Status.ASSIGNED);
-        task.setAllocationScore(null);
-        taskRepository.save(task);
-
-        notificationService.notify(employee,
-            String.format("[Manual Assignment] You have been assigned: \"%s\"", task.getTitle()));
-
         return toResponse(task);
     }
 
@@ -127,10 +87,8 @@ public class TaskService {
         return taskRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
     }
 
-    public List<TaskResponse> getMyTasks(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        return taskRepository.findByAssignedToId(user.getId())
+    public List<TaskResponse> getMyTasks(Long userId) {
+        return taskRepository.findByAssignedToId(userId)
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
@@ -140,34 +98,43 @@ public class TaskService {
     }
 
     private TaskResponse toResponse(Task task) {
-        return TaskResponse.builder()
-                .id(task.getId())
-                .title(task.getTitle())
-                .description(task.getDescription())
-                .priority(task.getPriority())
-                .status(task.getStatus())
-                .deadline(task.getDeadline())
-                .createdAt(task.getCreatedAt())
-                .assignedAt(task.getAssignedAt())
-                .allocationScore(task.getAllocationScore())
-                .createdBy(task.getCreatedBy() == null ? null : TaskResponse.UserSummary.builder()
-                        .id(task.getCreatedBy().getId())
-                        .name(task.getCreatedBy().getName())
-                        .email(task.getCreatedBy().getEmail())
-                        .build())
-                .assignedTo(task.getAssignedTo() == null ? null : TaskResponse.UserSummary.builder()
-                        .id(task.getAssignedTo().getId())
-                        .name(task.getAssignedTo().getName())
-                        .email(task.getAssignedTo().getEmail())
-                        .build())
-                .requiredSkills(task.getRequiredSkills().stream()
-                        .map(r -> TaskResponse.SkillRequirementSummary.builder()
-                                .skillId(r.getSkill().getId())
-                                .skillName(r.getSkill().getName())
-                                .skillCategory(r.getSkill().getCategory())
-                                .minProficiencyLevel(r.getMinProficiencyLevel())
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
+        TaskResponse res = new TaskResponse();
+        res.setId(task.getId());
+        res.setTitle(task.getTitle());
+        res.setDescription(task.getDescription());
+        res.setPriority(task.getPriority());
+        res.setStatus(task.getStatus());
+        res.setDeadline(task.getDeadline());
+        res.setCreatedAt(task.getCreatedAt());
+        res.setAssignedAt(task.getAssignedAt());
+        res.setAllocationScore(task.getAllocationScore());
+
+        if (task.getCreatedBy() != null) {
+            TaskResponse.UserSummary createdBy = new TaskResponse.UserSummary();
+            createdBy.setId(task.getCreatedBy().getId());
+            createdBy.setName(task.getCreatedBy().getName());
+            createdBy.setEmail(task.getCreatedBy().getEmail());
+            res.setCreatedBy(createdBy);
+        }
+
+        if (task.getAssignedTo() != null) {
+            TaskResponse.UserSummary assignedTo = new TaskResponse.UserSummary();
+            assignedTo.setId(task.getAssignedTo().getId());
+            assignedTo.setName(task.getAssignedTo().getName());
+            assignedTo.setEmail(task.getAssignedTo().getEmail());
+            res.setAssignedTo(assignedTo);
+        }
+
+        List<TaskResponse.SkillRequirementSummary> reqs = task.getRequiredSkills().stream().map(r -> {
+            TaskResponse.SkillRequirementSummary s = new TaskResponse.SkillRequirementSummary();
+            s.setSkillId(r.getSkill().getId());
+            s.setSkillName(r.getSkill().getName());
+            s.setSkillCategory(r.getSkill().getCategory());
+            s.setMinProficiencyLevel(r.getMinProficiencyLevel());
+            return s;
+        }).collect(Collectors.toList());
+        res.setRequiredSkills(reqs);
+
+        return res;
     }
 }

@@ -16,6 +16,8 @@ public class TaskCreateRequest {
     @NotNull
     private Task.Priority priority;
     private LocalDate deadline;
+    @NotNull
+    private Long createdById;   // id of the manager creating the task
     private List<SkillRequirementDto> requiredSkills;
 
     @Data

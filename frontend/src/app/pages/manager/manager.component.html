@@ -1,387 +1,135 @@
-<!-- ── Top Navbar ──────────────────────────── -->
-<nav class="app-nav">
-  <div class="brand">
-    <span>⚡</span> SkillTask
-  </div>
-  <span class="role-badge">Manager</span>
-
-  <div class="nav-actions">
-    <button class="btn btn-sm btn-outline-secondary" (click)="loadTasks(); loadEmployees()">
-      <i class="bi bi-arrow-clockwise"></i>
-    </button>
-    <a routerLink="/profile" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-person-circle me-1"></i>
-      <span class="d-none d-md-inline">My Profile</span>
-    </a>
-    <div class="nav-user">
-      <div class="avatar">{{ authService.currentUser?.name?.charAt(0) }}</div>
-      <span class="d-none d-md-inline">{{ authService.currentUser?.name }}</span>
+<nav class="navbar navbar-dark bg-primary mb-4">
+  <div class="container">
+    <span class="navbar-brand app-title">SkillTask - Manager</span>
+    <div class="text-white">
+      <span class="me-3">Hi, {{ authService.currentUser?.name }}</span>
+      <button class="btn btn-light btn-sm" (click)="logout()">Logout</button>
     </div>
-    <button class="btn btn-sm btn-outline-secondary" (click)="authService.logout()">
-      <i class="bi bi-box-arrow-right"></i>
-      <span class="d-none d-md-inline">Logout</span>
-    </button>
   </div>
 </nav>
 
-<div class="layout">
+<div class="container">
 
-  <!-- ── Sidebar ──────────────────────────── -->
-  <aside class="sidebar">
-    <div class="sidebar-section">Menu</div>
-    <button class="sidebar-link" [class.active]="activeTab==='tasks'" (click)="activeTab='tasks'">
-      <i class="bi bi-list-task"></i> Tasks
-      <span class="ms-auto badge" style="background:var(--primary-light);color:var(--primary)">
-        {{ tasks.length }}
-      </span>
-    </button>
-    <button class="sidebar-link" [class.active]="activeTab==='employees'" (click)="activeTab='employees'">
-      <i class="bi bi-people"></i> Employees
-      <span class="ms-auto badge" style="background:#f1f5f9;color:var(--text-muted)">
-        {{ employees.length }}
-      </span>
-    </button>
+  <!-- Create Task Form -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">Create New Task</div>
+    <div class="card-body">
 
-    <div class="sidebar-section" style="margin-top:12px">Summary</div>
-    <div class="px-3 py-2" style="font-size:.8rem;color:var(--text-muted)">
-      <div class="d-flex justify-content-between mb-1">
-        <span>Open</span> <strong style="color:var(--text)">{{ stats.open }}</strong>
-      </div>
-      <div class="d-flex justify-content-between mb-1">
-        <span>Assigned</span> <strong style="color:#2563eb">{{ stats.assigned }}</strong>
-      </div>
-      <div class="d-flex justify-content-between mb-1">
-        <span>In Progress</span> <strong style="color:#d97706">{{ stats.inProgress }}</strong>
-      </div>
-      <div class="d-flex justify-content-between">
-        <span>Done</span> <strong style="color:#16a34a">{{ stats.done }}</strong>
-      </div>
-    </div>
-  </aside>
+      <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
-  <!-- ── Main ─────────────────────────────── -->
-  <main class="main-content">
-
-    <!-- Allocation success banner -->
-    <div *ngIf="lastCreated" class="alloc-banner mb-4 fade-up">
-      <i class="bi bi-cpu-fill"></i>
-      <div class="flex-grow-1">
-        <strong>Auto-allocation complete!</strong>
-        Task <em>"{{ lastCreated.title }}"</em>
-        <span *ngIf="lastCreated.assignedTo">
-          assigned to <strong>{{ lastCreated.assignedTo.name }}</strong>
-          <span *ngIf="lastCreated.allocationScore" class="score-pill ms-2">
-            <i class="bi bi-star-fill" style="font-size:.6rem"></i> {{ lastCreated.allocationScore }}
-          </span>
-        </span>
-        <span *ngIf="!lastCreated.assignedTo" style="color:#d97706">
-          — No match found. Assign manually below.
-        </span>
-      </div>
-      <button class="btn-close" style="width:16px;height:16px" (click)="lastCreated=null"></button>
-    </div>
-
-    <!-- ══ TASKS TAB ══════════════════════════ -->
-    <div *ngIf="activeTab==='tasks'">
-
-      <!-- Stat cards -->
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-xl-3">
-          <div class="stat-card" style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">
-            <div class="num">{{ stats.total }}</div>
-            <div class="lbl">Total Tasks</div>
-            <i class="bi bi-collection icon"></i>
-          </div>
-        </div>
-        <div class="col-6 col-xl-3">
-          <div class="stat-card" style="background:linear-gradient(135deg,#0ea5e9,#2563eb)">
-            <div class="num">{{ stats.assigned }}</div>
-            <div class="lbl">Assigned</div>
-            <i class="bi bi-person-check icon"></i>
-          </div>
-        </div>
-        <div class="col-6 col-xl-3">
-          <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
-            <div class="num">{{ stats.inProgress }}</div>
-            <div class="lbl">In Progress</div>
-            <i class="bi bi-arrow-repeat icon"></i>
-          </div>
-        </div>
-        <div class="col-6 col-xl-3">
-          <div class="stat-card" style="background:linear-gradient(135deg,#10b981,#059669)">
-            <div class="num">{{ stats.done }}</div>
-            <div class="lbl">Done</div>
-            <i class="bi bi-check-circle icon"></i>
-          </div>
-        </div>
+      <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input type="text" class="form-control" [(ngModel)]="newTask.title" name="title">
       </div>
 
-      <!-- Toolbar -->
-      <div class="section-header">
-        <h5><i class="bi bi-list-task me-2" style="color:var(--primary)"></i>All Tasks</h5>
-        <div class="d-flex gap-2 align-items-center flex-wrap">
-          <select class="form-select form-select-sm" style="width:150px" [(ngModel)]="statusFilter">
-            <option value="">All Statuses</option>
-            <option>OPEN</option><option>ASSIGNED</option>
-            <option>IN_PROGRESS</option><option>DONE</option>
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea class="form-control" [(ngModel)]="newTask.description" name="desc" rows="2"></textarea>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Priority</label>
+          <select class="form-select" [(ngModel)]="newTask.priority" name="priority">
+            <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
           </select>
-          <select class="form-select form-select-sm" style="width:150px" [(ngModel)]="priorityFilter">
-            <option value="">All Priorities</option>
-            <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
-          </select>
-          <button class="btn btn-primary btn-sm" (click)="showCreateForm=true">
-            <i class="bi bi-plus-lg"></i> New Task
-          </button>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Deadline</label>
+          <input type="date" class="form-control" [(ngModel)]="newTask.deadline" name="deadline">
         </div>
       </div>
 
-      <!-- ── Create Task Inline Form ──────── -->
-      <div *ngIf="showCreateForm" class="card mb-4 fade-up">
-        <div class="card-header d-flex align-items-center justify-content-between">
-          <span><i class="bi bi-lightning-charge me-2" style="color:var(--primary)"></i>Create & Auto-Allocate</span>
-          <button class="btn-close" (click)="showCreateForm=false; resetForm()"></button>
-        </div>
-        <div class="card-body">
-          <div *ngIf="createError"
-               class="d-flex align-items-center gap-2 p-3 mb-3 rounded-3"
-               style="background:#fff1f2;border:1px solid #fecdd3;font-size:.85rem;color:#e11d48">
-            <i class="bi bi-exclamation-circle"></i> {{ createError }}
+      <!-- Skill requirements -->
+      <div class="mb-3">
+        <label class="form-label">Required Skills</label>
+        <div *ngFor="let req of newTask.requiredSkills; let i = index" class="row mb-2">
+          <div class="col-md-6">
+            <select class="form-select" [(ngModel)]="req.skillId" [name]="'skill'+i">
+              <option [ngValue]="0">-- Select Skill --</option>
+              <option *ngFor="let s of skills" [ngValue]="s.id">{{ s.name }}</option>
+            </select>
           </div>
-
-          <div class="row g-3">
-            <div class="col-md-5">
-              <label class="form-label">Task Title *</label>
-              <input [(ngModel)]="newTask.title" class="form-control" placeholder="e.g. Build REST API module">
-            </div>
-            <div class="col-md-3 col-6">
-              <label class="form-label">Priority</label>
-              <select [(ngModel)]="newTask.priority" class="form-select">
-                <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
-              </select>
-            </div>
-            <div class="col-md-4 col-6">
-              <label class="form-label">Deadline</label>
-              <input [(ngModel)]="newTask.deadline" type="date" class="form-control">
-            </div>
-            <div class="col-12">
-              <label class="form-label">Description</label>
-              <textarea [(ngModel)]="newTask.description" class="form-control" rows="2"
-                        placeholder="Describe the task…"></textarea>
-            </div>
-            <!-- Skill Requirements -->
-            <div class="col-12">
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <label class="form-label mb-0">Required Skills</label>
-                <button class="btn btn-sm btn-outline-primary" (click)="addSkillReq()">
-                  <i class="bi bi-plus-lg"></i> Add Skill
-                </button>
-              </div>
-              <div *ngIf="newTask.requiredSkills.length === 0"
-                   class="rounded-3 text-center py-3"
-                   style="background:var(--bg);border:1px dashed var(--border);font-size:.82rem;color:var(--text-light)">
-                No skill requirements — task assigns by workload balance
-              </div>
-              <div *ngFor="let req of newTask.requiredSkills; let i = index"
-                   class="d-flex gap-2 align-items-center mb-2">
-                <select [(ngModel)]="req.skillId" class="form-select form-select-sm">
-                  <option [value]="0">Select skill…</option>
-                  <option *ngFor="let s of skills" [value]="s.id">{{ s.name }} ({{ s.category }})</option>
-                </select>
-                <select [(ngModel)]="req.minProficiencyLevel" class="form-select form-select-sm" style="max-width:180px">
-                  <option [value]="1">Min: Beginner</option>
-                  <option [value]="2">Min: Elementary</option>
-                  <option [value]="3">Min: Intermediate</option>
-                  <option [value]="4">Min: Advanced</option>
-                  <option [value]="5">Min: Expert</option>
-                </select>
-                <button class="btn btn-sm btn-icon btn-outline-danger" (click)="removeSkillReq(i)">
-                  <i class="bi bi-trash3"></i>
-                </button>
-              </div>
-            </div>
+          <div class="col-md-4">
+            <select class="form-select" [(ngModel)]="req.minProficiencyLevel" [name]="'level'+i">
+              <option *ngFor="let l of proficiencies" [ngValue]="l">
+                Min: {{ proficiencyLabel(l) }}
+              </option>
+            </select>
           </div>
-
-          <div class="d-flex gap-2 mt-3">
-            <button class="btn btn-primary" (click)="submitTask()" [disabled]="createLoading">
-              <span *ngIf="createLoading" class="spinner-border spinner-border-sm"></span>
-              <i *ngIf="!createLoading" class="bi bi-lightning-fill"></i>
-              {{ createLoading ? 'Allocating…' : 'Create & Auto-Allocate' }}
-            </button>
-            <button class="btn btn-outline-secondary" (click)="showCreateForm=false; resetForm()">
-              Cancel
-            </button>
+          <div class="col-md-2">
+            <button class="btn btn-outline-danger btn-sm" (click)="removeSkillReq(i)">Remove</button>
           </div>
         </div>
+        <button class="btn btn-outline-primary btn-sm" (click)="addSkillReq()">+ Add Skill</button>
       </div>
 
-      <!-- ── Tasks Table ─────────────────── -->
-      <div class="card">
-        <div *ngIf="tasksLoading" class="empty-state">
-          <span class="spinner-border spinner-border-sm me-2"></span> Loading tasks…
-        </div>
-        <div *ngIf="!tasksLoading && filteredTasks.length === 0" class="empty-state">
-          <i class="bi bi-inbox-fill"></i>
-          <p>No tasks yet. Click <strong>New Task</strong> to get started.</p>
-        </div>
-        <div *ngIf="!tasksLoading && filteredTasks.length > 0" class="table-responsive">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Required Skills</th>
-                <th>Assigned To</th>
-                <th>Score</th>
-                <th>Deadline</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let t of filteredTasks" class="fade-up">
-                <td>
-                  <div class="fw-600">{{ t.title }}</div>
-                  <div *ngIf="t.description" class="mt-1"
-                       style="font-size:.78rem;color:var(--text-muted);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                    {{ t.description }}
-                  </div>
-                </td>
-                <td>
-                  <span class="badge p-{{ t.priority | lowercase }}">{{ t.priority }}</span>
-                </td>
-                <td>
-                  <span class="badge s-{{ t.status | lowercase }}">
-                    {{ t.status === 'IN_PROGRESS' ? 'In Progress' : (t.status | titlecase) }}
-                  </span>
-                </td>
-                <td>
-                  <div class="d-flex flex-wrap gap-1">
-                    <span *ngFor="let s of t.requiredSkills" class="skill-tag">
-                      {{ s.skillName }} <span class="lvl">≥{{ s.minProficiencyLevel }}</span>
-                    </span>
-                    <span *ngIf="t.requiredSkills.length===0" style="color:var(--text-light);font-size:.78rem">Any</span>
-                  </div>
-                </td>
-                <td>
-                  <div *ngIf="t.assignedTo" class="d-flex align-items-center gap-2">
-                    <div class="avatar" style="width:26px;height:26px;font-size:.72rem">
-                      {{ t.assignedTo.name.charAt(0) }}
-                    </div>
-                    <span class="fw-500">{{ t.assignedTo.name }}</span>
-                  </div>
-                  <span *ngIf="!t.assignedTo" style="color:var(--text-light);font-size:.8rem">Unassigned</span>
-                </td>
-                <td>
-                  <span *ngIf="t.allocationScore" class="score-pill">
-                    <i class="bi bi-star-fill" style="font-size:.6rem"></i> {{ t.allocationScore }}
-                  </span>
-                  <span *ngIf="!t.allocationScore" style="color:var(--text-light)">—</span>
-                </td>
-                <td style="color:var(--text-muted);font-size:.8rem;white-space:nowrap">
-                  {{ t.deadline || '—' }}
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-icon btn-outline-secondary"
-                          title="Reassign"
-                          (click)="openAssign(t.id)"
-                          data-bs-toggle="modal" data-bs-target="#assignModal">
-                    <i class="bi bi-person-plus"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ EMPLOYEES TAB ══════════════════════ -->
-    <div *ngIf="activeTab==='employees'">
-      <div class="section-header">
-        <h5><i class="bi bi-people me-2" style="color:var(--primary)"></i>Team Members</h5>
-        <span style="font-size:.82rem;color:var(--text-muted)">{{ employees.length }} employees</span>
-      </div>
-
-      <div *ngIf="employeesLoading" class="empty-state">
-        <span class="spinner-border spinner-border-sm me-2"></span> Loading…
-      </div>
-
-      <div class="row g-3" *ngIf="!employeesLoading">
-        <div class="col-md-6 col-xl-4" *ngFor="let emp of employees">
-          <div class="card h-100 fade-up">
-            <div class="card-body">
-              <!-- Header -->
-              <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="avatar" style="width:44px;height:44px;font-size:1rem;flex-shrink:0">
-                  {{ emp.name.charAt(0) }}
-                </div>
-                <div class="flex-grow-1">
-                  <div class="fw-600">{{ emp.name }}</div>
-                  <div style="font-size:.78rem;color:var(--text-muted)">{{ emp.email }}</div>
-                </div>
-                <span class="badge"
-                      [style.background]="emp.available ? '#f0fdf4' : '#f8fafc'"
-                      [style.color]="emp.available ? '#16a34a' : '#94a3b8'"
-                      style="border:1px solid;border-color:inherit">
-                  <i class="bi me-1" [class.bi-circle-fill]="emp.available" [class.bi-dash-circle]="!emp.available"></i>
-                  {{ emp.available ? 'Available' : 'Busy' }}
-                </span>
-              </div>
-
-              <!-- Workload -->
-              <div class="d-flex align-items-center gap-2 mb-3 px-1"
-                   style="font-size:.8rem;color:var(--text-muted)">
-                <i class="bi bi-briefcase"></i>
-                <span><strong style="color:var(--text)">{{ emp.activeTaskCount }}</strong> active task(s)</span>
-                <div class="ms-auto d-flex gap-1">
-                  <div *ngFor="let dot of [].constructor(5); let i = index"
-                       style="width:8px;height:8px;border-radius:50%"
-                       [style.background]="i < emp.activeTaskCount ? '#f59e0b' : '#e2e8f0'"></div>
-                </div>
-              </div>
-
-              <!-- Skills -->
-              <div class="d-flex flex-wrap gap-1">
-                <span *ngFor="let s of emp.skills" class="skill-tag">
-                  {{ s.skillName }}
-                  <span class="lvl">{{ proficiencyLabel(s.proficiencyLevel) }}</span>
-                </span>
-                <span *ngIf="emp.skills.length === 0"
-                      style="font-size:.8rem;color:var(--text-light)">No skills added</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<!-- ── Manual Assign Modal ─────────────────── -->
-<div class="modal fade" id="assignModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:380px">
-    <div class="modal-content" style="border-radius:var(--radius);border:1px solid var(--border)">
-      <div class="modal-header" style="border-bottom:1px solid var(--border)">
-        <h6 class="modal-title fw-700"><i class="bi bi-person-plus me-2"></i>Manual Reassign</h6>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body py-3">
-        <label class="form-label">Select Employee</label>
-        <select [(ngModel)]="assignEmployeeId" class="form-select">
-          <option [value]="null">Choose an employee…</option>
-          <option *ngFor="let e of employees" [value]="e.id">
-            {{ e.name }} — {{ e.activeTaskCount }} active tasks
-          </option>
-        </select>
-      </div>
-      <div class="modal-footer" style="border-top:1px solid var(--border)">
-        <button class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-sm btn-primary" data-bs-dismiss="modal"
-                (click)="doManualAssign()" [disabled]="!assignEmployeeId">
-          <i class="bi bi-check-lg"></i> Assign
-        </button>
-      </div>
+      <button class="btn btn-primary" (click)="submitTask()" [disabled]="loading">
+        {{ loading ? 'Creating...' : 'Create Task' }}
+      </button>
     </div>
   </div>
+
+  <!-- Tasks Table -->
+  <div class="card mb-4">
+    <div class="card-header bg-warning text-dark">All Tasks</div>
+    <div class="card-body">
+      <table class="table table-bordered align-middle" *ngIf="tasks.length > 0">
+        <thead class="table-light">
+          <tr>
+            <th>Title</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Assigned To</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let t of tasks">
+            <td>{{ t.title }}</td>
+            <td><span class="badge" [ngClass]="priorityColor(t.priority)">{{ t.priority }}</span></td>
+            <td><span class="badge" [ngClass]="statusColor(t.status)">{{ t.status }}</span></td>
+            <td>{{ t.assignedTo?.name || '-' }}</td>
+            <td>
+              <span *ngIf="t.allocationScore != null" class="badge bg-success">{{ t.allocationScore }}</span>
+              <span *ngIf="t.allocationScore == null" class="text-muted">-</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p *ngIf="tasks.length === 0" class="text-muted">No tasks yet.</p>
+    </div>
+  </div>
+
+  <!-- Employees Table -->
+  <div class="card mb-5">
+    <div class="card-header bg-success text-white">Employees</div>
+    <div class="card-body">
+      <table class="table table-bordered align-middle" *ngIf="employees.length > 0">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Active Tasks</th>
+            <th>Skills</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of employees">
+            <td>{{ e.name }}</td>
+            <td>{{ e.email }}</td>
+            <td><span class="badge bg-info text-dark">{{ e.activeTaskCount }}</span></td>
+            <td>
+              <span *ngFor="let s of e.skills" class="badge bg-primary me-1 mb-1">
+                {{ s.skillName }} ({{ proficiencyLabel(s.proficiencyLevel) }})
+              </span>
+              <span *ngIf="e.skills.length === 0" class="text-muted">No skills</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p *ngIf="employees.length === 0" class="text-muted">No employees.</p>
+    </div>
+  </div>
+
 </div>

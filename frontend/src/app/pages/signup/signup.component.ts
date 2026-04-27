@@ -8,21 +8,19 @@ import { Role } from '../../models/user.model';
   templateUrl: './signup.component.html'
 })
 export class SignupComponent {
-  name      = '';
-  email     = '';
-  password  = '';
+  name = '';
+  email = '';
+  password = '';
   confirmPw = '';
   role: Role = 'EMPLOYEE';
-  showPw    = false;
-  showConfirmPw = false;
-  loading   = false;
-  error     = '';
+  loading = false;
+  error = '';
   fieldErrors: Record<string, string> = {};
 
   constructor(private authService: AuthService, private router: Router) {}
 
   onRegister(): void {
-    this.error       = '';
+    this.error = '';
     this.fieldErrors = {};
     if (!this.validate()) return;
 
@@ -34,7 +32,7 @@ export class SignupComponent {
       },
       error: err => {
         this.loading = false;
-        this.error = err?.error?.message ?? err?.error?.error ?? 'Registration failed. Please try again.';
+        this.error = err?.error?.message ?? 'Registration failed. Please try again.';
       }
     });
   }

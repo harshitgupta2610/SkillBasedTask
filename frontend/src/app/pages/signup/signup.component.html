@@ -1,138 +1,54 @@
-<div class="login-page">
-
-  <!-- ── Left hero ─────────────────────────── -->
-  <div class="login-hero">
-    <div>
-      <div style="font-size:2.4rem;margin-bottom:12px">⚡</div>
-      <h1>Join<br>SkillTask</h1>
-      <p>Set up your account in seconds and start allocating tasks smarter.</p>
-
-      <div class="feature-item mt-4">
-        <i class="bi bi-person-workspace"></i>
-        <span><strong>Employees</strong> get auto-assigned tasks based on their skills</span>
-      </div>
-      <div class="feature-item">
-        <i class="bi bi-briefcase"></i>
-        <span><strong>Managers</strong> create tasks and track team progress</span>
-      </div>
-      <div class="feature-item">
-        <i class="bi bi-cpu"></i>
-        <span>Smart algorithm scores and matches every assignment</span>
-      </div>
+<div class="container" style="max-width: 450px; margin-top: 60px;">
+  <div class="card shadow-sm">
+    <div class="card-header bg-success text-white text-center">
+      <h4 class="mb-0">Create Account</h4>
     </div>
-  </div>
+    <div class="card-body">
+      <h6 class="text-center text-muted mb-4">Join SkillTask</h6>
 
-  <!-- ── Right form panel ───────────────────── -->
-  <div class="login-form-side">
-    <div class="login-form-wrap fade-up">
+      <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
-      <h2>Create account</h2>
-      <p class="sub">Fill in your details to get started</p>
-
-      <!-- Error banner -->
-      <div *ngIf="error" class="form-error-banner">
-        <i class="bi bi-exclamation-circle-fill"></i> {{ error }}
-      </div>
-
-      <!-- Full Name -->
-      <div class="mb-3">
-        <label class="form-label">Full Name</label>
-        <div class="input-icon-wrap">
-          <i class="bi bi-person input-icon"></i>
-          <input [(ngModel)]="name" type="text" class="form-control"
-                 [class.is-invalid]="fieldErrors['name']"
-                 placeholder="e.g. Alice Johnson">
+      <form (ngSubmit)="onRegister()">
+        <div class="mb-3">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-control" [(ngModel)]="name" name="name" required>
+          <div class="error" *ngIf="fieldErrors['name']">{{ fieldErrors['name'] }}</div>
         </div>
-        <div *ngIf="fieldErrors['name']" class="field-error">{{ fieldErrors['name'] }}</div>
-      </div>
 
-      <!-- Email -->
-      <div class="mb-3">
-        <label class="form-label">Email Address</label>
-        <div class="input-icon-wrap">
-          <i class="bi bi-envelope input-icon"></i>
-          <input [(ngModel)]="email" type="email" class="form-control"
-                 [class.is-invalid]="fieldErrors['email']"
-                 placeholder="you@company.com">
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" [(ngModel)]="email" name="email" required>
+          <div class="error" *ngIf="fieldErrors['email']">{{ fieldErrors['email'] }}</div>
         </div>
-        <div *ngIf="fieldErrors['email']" class="field-error">{{ fieldErrors['email'] }}</div>
-      </div>
 
-      <!-- Role -->
-      <div class="mb-3">
-        <label class="form-label">I am a…</label>
-        <div class="role-picker">
-          <div class="role-option" [class.role-selected]="role==='EMPLOYEE'" (click)="role='EMPLOYEE'">
-            <div class="role-icon" style="background:#eff6ff;color:#2563eb">
-              <i class="bi bi-person-workspace"></i>
-            </div>
-            <div>
-              <div class="role-name">Employee</div>
-              <div class="role-desc">Receive & complete tasks</div>
-            </div>
-            <i *ngIf="role==='EMPLOYEE'" class="bi bi-check-circle-fill ms-auto" style="color:#2563eb"></i>
-          </div>
-          <div class="role-option" [class.role-selected]="role==='MANAGER'" (click)="role='MANAGER'">
-            <div class="role-icon" style="background:#fdf4ff;color:#9333ea">
-              <i class="bi bi-briefcase"></i>
-            </div>
-            <div>
-              <div class="role-name">Manager</div>
-              <div class="role-desc">Create tasks & manage team</div>
-            </div>
-            <i *ngIf="role==='MANAGER'" class="bi bi-check-circle-fill ms-auto" style="color:#9333ea"></i>
-          </div>
+        <div class="mb-3">
+          <label class="form-label">Role</label>
+          <select class="form-select" [(ngModel)]="role" name="role">
+            <option value="EMPLOYEE">Employee</option>
+            <option value="MANAGER">Manager</option>
+          </select>
         </div>
-      </div>
 
-      <!-- Password -->
-      <div class="mb-3">
-        <label class="form-label">Password</label>
-        <div class="input-icon-wrap">
-          <i class="bi bi-lock input-icon"></i>
-          <input [(ngModel)]="password" [type]="showPw ? 'text' : 'password'"
-                 class="form-control" [class.is-invalid]="fieldErrors['password']"
-                 placeholder="Min. 6 characters">
-          <button class="pw-toggle" type="button" (click)="showPw=!showPw">
-            <i class="bi" [class.bi-eye]="!showPw" [class.bi-eye-slash]="showPw"></i>
-          </button>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" [(ngModel)]="password" name="password" required>
+          <div class="error" *ngIf="fieldErrors['password']">{{ fieldErrors['password'] }}</div>
         </div>
-        <div *ngIf="fieldErrors['password']" class="field-error">{{ fieldErrors['password'] }}</div>
-      </div>
 
-      <!-- Confirm Password -->
-      <div class="mb-4">
-        <label class="form-label">Confirm Password</label>
-        <div class="input-icon-wrap">
-          <i class="bi bi-lock-fill input-icon"></i>
-          <input [(ngModel)]="confirmPw" [type]="showConfirmPw ? 'text' : 'password'"
-                 class="form-control" [class.is-invalid]="fieldErrors['confirmPw']"
-                 placeholder="Re-enter your password" (keyup.enter)="onRegister()">
-          <button class="pw-toggle" type="button" (click)="showConfirmPw=!showConfirmPw">
-            <i class="bi" [class.bi-eye]="!showConfirmPw" [class.bi-eye-slash]="showConfirmPw"></i>
-          </button>
+        <div class="mb-3">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" class="form-control" [(ngModel)]="confirmPw" name="confirmPw" required>
+          <div class="error" *ngIf="fieldErrors['confirmPw']">{{ fieldErrors['confirmPw'] }}</div>
         </div>
-        <div *ngIf="fieldErrors['confirmPw']" class="field-error">{{ fieldErrors['confirmPw'] }}</div>
-      </div>
 
-      <!-- Submit -->
-      <button class="btn btn-primary w-100 py-2" (click)="onRegister()" [disabled]="loading"
-              style="font-size:.9rem !important;font-weight:600 !important">
-        <span *ngIf="loading" class="spinner-border spinner-border-sm"></span>
-        <i *ngIf="!loading" class="bi bi-person-plus-fill"></i>
-        {{ loading ? 'Creating account…' : 'Create Account' }}
-      </button>
+        <button type="submit" class="btn btn-primary w-100" [disabled]="loading">
+          {{ loading ? 'Creating account...' : 'Sign Up' }}
+        </button>
+      </form>
 
-      <hr style="border-color:var(--border);margin:24px 0">
-
-      <p class="text-center mb-0" style="font-size:.875rem;color:var(--text-muted)">
-        Already have an account?
-        <a routerLink="/login"
-           style="color:var(--primary);font-weight:600;text-decoration:none;margin-left:4px">
-          Sign in &rarr;
-        </a>
+      <p class="text-center mt-3 mb-0">
+        Already have an account? <a routerLink="/login">Login</a>
       </p>
-
     </div>
   </div>
 </div>

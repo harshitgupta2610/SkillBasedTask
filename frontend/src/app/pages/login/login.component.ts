@@ -7,15 +7,15 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './login.component.html'
 })
 export class LoginComponent {
-  email    = '';
+  email = '';
   password = '';
-  loading  = false;
-  error    = '';
+  loading = false;
+  error = '';
 
   constructor(private authService: AuthService, private router: Router) {}
 
   onLogin(): void {
-    this.error   = '';
+    this.error = '';
     this.loading = true;
     this.authService.login(this.email, this.password).subscribe({
       next: (res) => {
@@ -24,19 +24,8 @@ export class LoginComponent {
       },
       error: () => {
         this.loading = false;
-        this.error   = 'Invalid email or password.';
+        this.error = 'Invalid email or password.';
       }
     });
-  }
-
-  fillDemo(role: 'manager' | 'alice' | 'bob' | 'charlie'): void {
-    const map: Record<string, string> = {
-      manager: 'manager@demo.com',
-      alice:   'alice@demo.com',
-      bob:     'bob@demo.com',
-      charlie: 'charlie@demo.com'
-    };
-    this.email    = map[role];
-    this.password = 'password123';
   }
 }

@@ -2,51 +2,39 @@ package com.taskalloc.controller;
 
 import com.taskalloc.dto.*;
 import com.taskalloc.model.User;
-import com.taskalloc.security.JwtUtil;
 import com.taskalloc.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.*;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
     private final UserService userService;
-    private final JwtUtil jwtUtil;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
-        try {
-            authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
-            );
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        User user = userService.getByEmail(req.getEmail());
-        return ResponseEntity.ok(buildAuthResponse(user));
+        User user = userService.login(req.getEmail(), req.getPassword());
+        return ResponseEntity.ok(toResponse(user));
     }
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest req) {
         User user = userService.register(req);
-        return ResponseEntity.status(HttpStatus.CREATED).body(buildAuthResponse(user));
+        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(user));
     }
 
-    private AuthResponse buildAuthResponse(User user) {
-        return AuthResponse.builder()
-                .token(jwtUtil.generateToken(user.getEmail()))
-                .userId(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .build();
+    private AuthResponse toResponse(User user) {
+        AuthResponse res = new AuthResponse();
+        res.setUserId(user.getId());
+        res.setName(user.getName());
+        res.setEmail(user.getEmail());
+        res.setRole(user.getRole());
+        return res;
     }
 }

@@ -34,5 +34,6 @@ export interface TaskCreateRequest {
   description: string;
   priority: Priority;
   deadline?: string;
+  createdById: number;
   requiredSkills: { skillId: number; minProficiencyLevel: number }[];
 }
